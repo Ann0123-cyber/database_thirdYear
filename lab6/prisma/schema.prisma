@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  userid        Int             @id @default(autoincrement())
+  fullname      String          @db.VarChar(100)
+  email         String          @unique @db.VarChar(100)
+  passwordhash  String          @db.VarChar(255)
+  position      String?         @db.VarChar(100)
+  comment       comment[]
+  project_user  project_user[]
+  task_assignee task_assignee[]
+  team_user     team_user[]
+  phone         String?         @db.VarChar(20)
+}
+
+model board {
+  boardid   Int      @id @default(autoincrement())
+  boardname String   @db.VarChar(100)
+  projectid Int?
+  project   project? @relation(fields: [projectid], references: [projectid], onDelete: Cascade, onUpdate: NoAction)
+  task      task[]
+}
+
+model comment {
+  commentid Int       @id @default(autoincrement())
+  content   String
+  createdat DateTime? @default(now()) @db.Timestamp(6)
+  userid    Int?
+  taskid    Int?
+  task      task?     @relation(fields: [taskid], references: [taskid], onDelete: Cascade, onUpdate: NoAction)
+  User      User?     @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model project {
+  projectid    Int            @id @default(autoincrement())
+  projectname  String         @db.VarChar(100)
+  startdate    DateTime       @db.Date
+  enddate      DateTime?      @db.Date
+  teamid       Int?
+  board        board[]
+  team         team?          @relation(fields: [teamid], references: [teamid], onUpdate: NoAction)
+  project_user project_user[]
+}
+
+model project_user {
+  projectid Int
+  userid    Int
+  role      String  @db.VarChar(50)
+  project   project @relation(fields: [projectid], references: [projectid], onDelete: Cascade, onUpdate: NoAction)
+  User      User    @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([projectid, userid])
+}
+
+model tag {
+  tagid    Int        @id @default(autoincrement())
+  tagname  String     @db.VarChar(50)
+  color    String?    @db.VarChar(20)
+  task_tag task_tag[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model task {
+  taskid        Int             @id @default(autoincrement())
+  title         String          @db.VarChar(150)
+  details       String?
+  status        String?         @default("To Do") @db.VarChar(50)
+  priority      String?         @db.VarChar(20)
+  duedate       DateTime?       @db.Date
+  boardid       Int?
+  comment       comment[]
+  board         board?          @relation(fields: [boardid], references: [boardid], onDelete: Cascade, onUpdate: NoAction)
+  task_assignee task_assignee[]
+  task_tag      task_tag[]
+  reviews Review[]
+}
+
+model task_assignee {
+  userid Int
+  taskid Int
+  task   task @relation(fields: [taskid], references: [taskid], onDelete: Cascade, onUpdate: NoAction)
+  User   User @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userid, taskid])
+}
+
+model task_tag {
+  taskid Int
+  tagid  Int
+  tag    tag  @relation(fields: [tagid], references: [tagid], onDelete: Cascade, onUpdate: NoAction)
+  task   task @relation(fields: [taskid], references: [taskid], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([taskid, tagid])
+}
+
+model team {
+  teamid      Int         @id @default(autoincrement())
+  teamname    String      @db.VarChar(100)
+  description String?
+  project     project[]
+  team_user   team_user[]
+}
+
+model team_user {
+  teamid Int
+  userid Int
+  team   team @relation(fields: [teamid], references: [teamid], onDelete: Cascade, onUpdate: NoAction)
+  User   User @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([teamid, userid])
+}
+
+model Review {
+  reviewid  Int   @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  taskId    Int
+  task      task @relation(fields: [taskId], references: [taskid])
+}
+
+
